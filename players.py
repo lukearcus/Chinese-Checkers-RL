@@ -33,7 +33,7 @@ class random_player(Player):
 
 
 class deterministic_player(Player):
-    rand_freq = 0.0
+    rand_freq = 0.5
     goal_pos = (0, 0)
 
     def set_goal(self, goal):
