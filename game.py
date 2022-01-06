@@ -10,32 +10,60 @@ class ChineseCheckers:
     """
 
     win_order = list()
+    win_turn = list()
 
     def __init__(self, _players, _draw=False):
         plt.ion()
         NewBoard = np.zeros((17, 27))
         num_players = len(_players)
         self.players = _players
-        for i, player in enumerate(self.players):
-            player.set_id(i+1)
+
         if num_players == 2:
             self.players[0].set_goal(np.array([16, 13]))
+            self.players[0].set_id(1)
             self.players[1].set_goal(np.array([0, 13]))
+            self.players[1].set_id(4)
             for i in range(4):
                 NewBoard[i, :] = 1
-                NewBoard[-1-i, :] = 2
+                NewBoard[-1-i, :] = 4
         if num_players == 3:
+            self.players[0].set_goal(np.array([16, 13]))
+            self.players[0].set_id(1)
+            self.players[1].set_goal(np.array([4, 1]))
+            self.players[1].set_id(3)
+            self.players[2].set_goal(np.array([4, 25]))
+            self.players[2].set_id(5)
             for i in range(4):
                 NewBoard[i, :] = 1
-                NewBoard[-i-5, -9+i:] = 2
-                NewBoard[-i-5, 0:9-i] = 3
+                NewBoard[-i-5, -9+i:] = 3
+                NewBoard[-i-5, 0:9-i] = 5
         if num_players == 4:
+            self.players[0].set_goal(np.array([12, 1]))
+            self.players[0].set_id(2)
+            self.players[1].set_goal(np.array([4, 1]))
+            self.players[1].set_id(3)
+            self.players[2].set_goal(np.array([4, 25]))
+            self.players[2].set_id(5)
+            self.players[3].set_goal(np.array([12, 25]))
+            self.players[3].set_id(6)
             for i in range(4):
-                NewBoard[i+4, -9+i:] = 1
-                NewBoard[-i-5, -9+i:] = 2
-                NewBoard[-i-5, 0:9-i] = 3
-                NewBoard[i+4, 0:9-i] = 4
+                NewBoard[i+4, -9+i:] = 2
+                NewBoard[-i-5, -9+i:] = 3
+                NewBoard[-i-5, 0:9-i] = 5
+                NewBoard[i+4, 0:9-i] = 6
         if num_players == 6:
+            self.players[0].set_goal(np.array([16, 13]))
+            self.players[0].set_id(1)
+            self.players[1].set_goal(np.array([12, 1]))
+            self.players[1].set_id(2)
+            self.players[2].set_goal(np.array([4, 1]))
+            self.players[2].set_id(3)
+            self.players[3].set_goal(np.array([0, 13]))
+            self.players[3].set_id(4)
+            self.players[4].set_goal(np.array([4, 25]))
+            self.players[4].set_id(5)
+            self.players[5].set_goal(np.array([12, 25]))
+            self.players[5].set_id(6)
             for i in range(4):
                 NewBoard[i, :] = 1
                 NewBoard[i+4, -9+i:] = 2
@@ -94,12 +122,12 @@ class ChineseCheckers:
         self.ax.imshow(RGB)
         for i in range(self.num_players):
             self.ax.text(2*(i+1 > 3), i % 3, 'player ' + str(i+1),
-                         bbox={'facecolor': palette[i+1]/255, 'pad': 10})
+                         bbox={'facecolor': palette[self.players[i].id_num]/255, 'pad': 10})
         if self.win_order:
             self.ax.text(18, 0, 'Leaderboard', bbox={'facecolor': 'white', 'pad': 10})
         for i, winner in enumerate(self.win_order):
             self.ax.text(20+2*(i+1 > 3), i % 3, str(i+1) + ': ' +  'player ' + str(winner),
-                         bbox={'facecolor': palette[winner]/255, 'pad': 10})
+                         bbox={'facecolor': palette[self.players[i].id_num]/255, 'pad': 10})
 
         #plt.title("Player: " + str(self.curr_player))
         plt.show()
@@ -134,7 +162,7 @@ class ChineseCheckers:
                         self.allowed[hop] = True
                         self.check_allowed(hop, True)
 
-    def check_win(self):
+    def check_win(self, turn):
         won = list()
         for i in range(self.num_players):
             won.append(True)
@@ -142,21 +170,21 @@ class ChineseCheckers:
             for i in range(4):
                 won[0] = won[0] and (np.any(self.board[-1-i, :] == 1)
                                      and np.all(self.board[-1-i, :] != 0))
-                won[1] = won[1] and (np.any(self.board[i, :] == 2)
+                won[1] = won[1] and (np.any(self.board[i, :] == 4)
                                      and np.all(self.board[i, :] != 0))
         if self.num_players == 3:
             for i in range(4):
                 won[0] = won[0] and np.any(self.board[-1-i, self.board[-1-i, :] != -1] == 1)
                 won[1] = won[1] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 2)
+                        self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 3)
                 won[2] = won[2] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 3)
+                        self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 5)
         if self.num_players == 4:
             for i in range(4):
-                won[0] = won[0] and np.any(self.board[-i-5, np.pad(self.board[-i-5, 0:9-i] != -1, (0, i+18))] == 1)
-                won[1] = won[1] and np.any(self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 2)
-                won[2] = won[2] and np.any(self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 3)
-                won[3] = won[3] and np.any(self.board[-i-5, np.pad(self.board[-i-5, -9+i:] != -1, (18+i, 0))] == 4)
+                won[0] = won[0] and np.any(self.board[-i-5, np.pad(self.board[-i-5, 0:9-i] != -1, (0, i+18))] == 2)
+                won[1] = won[1] and np.any(self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 3)
+                won[2] = won[2] and np.any(self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 5)
+                won[3] = won[3] and np.any(self.board[-i-5, np.pad(self.board[-i-5, -9+i:] != -1, (18+i, 0))] == 6)
         if self.num_players == 6:
             for i in range(4):
                 won[0] = won[0] and np.any(self.board[-1-i, self.board[-1-i, :] != -1] == 1)
@@ -172,9 +200,9 @@ class ChineseCheckers:
         self.win_list = won
         for i in range(self.num_players):
             if won[i]:
-                if i+1 not in self.win_order:
-                    self.win_order.append(i+1)
-                    self.players.pop(i)
+                if self.players[i].id_num not in self.win_order:
+                    self.win_order.append(self.players[i].id_num)
+                    self.win_turn.append(turn)
                     
 
     def onclick(self, event):
@@ -189,11 +217,11 @@ class ChineseCheckers:
             self.move_chosen[1] = np.array((iy, ix))
 
     def play_game(self):
-        itt = 0
-        while len(self.players) > 1:
+        turn = 0
+        while len(self.win_order) < self.num_players-1:
             for i, curr_player in enumerate(self.players):
                 if curr_player.id_num not in self.win_order:
-                    positions = np.where(self.board == i+1)
+                    positions = np.where(self.board == curr_player.id_num)
                     possible_moves = []
                     positions = np.stack(positions).T
                     for pos in positions:
@@ -220,9 +248,10 @@ class ChineseCheckers:
                         if self.draw:
                             plt.waitforbuttonpress()
                     self.board[selected_move[0][0], selected_move[0][1]] = 0
-                    self.board[selected_move[1][0], selected_move[1][1]] = i+1
-                    self.check_win()
+                    self.board[selected_move[1][0], selected_move[1][1]] = curr_player.id_num
+                    self.check_win(turn)
                     if self.draw:
                         self.show()
-                    itt += 1
+            turn += 1
         self.win_order.append(self.players[0].id_num)
+        self.win_turn.append(turn)

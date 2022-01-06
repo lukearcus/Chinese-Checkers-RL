@@ -1,6 +1,7 @@
 import random
 import numpy as np
 
+
 # Receives board position and moves as a list of tuples (position (of piece to
 # be moved), position it can move to)
 
@@ -56,4 +57,27 @@ class deterministic_player(Player):
                 if dist < min_distance:
                     min_distance = dist
                     selected_move = move
+        return selected_move
+
+
+class RL_player_v1(Player):
+    def __init__(self, val_nn):
+        self.value_network = val_nn
+
+    def get_val(self, board):
+
+        values = self.value_network(board)
+        value = values[self.id_num]
+        return value
+
+    def move(self, board, poss_moves):
+        max_val = -np.inf
+        for move in poss_moves:
+            poss_board = np.copy(board)
+            poss_board[move[0][0], move[0][1]] = 0
+            poss_board[move[1][0], move[1][1]] = self.id_num
+            value = self.get_val(poss_board)
+            if value > max_val:
+                max_val = value
+                selected_move = move
         return selected_move
