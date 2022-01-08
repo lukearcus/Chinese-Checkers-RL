@@ -6,12 +6,14 @@ import numpy as np
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 network = value_nets.NeuralNetwork_v1().to(device)
+
+network.load_state_dict(torch.load('trained_NN_v1_weights'))
 RL_player = players.RL_player_v1(network)
 player_list = [RL_player, players.deterministic_player()]
 
 draw = False
 board = game.ChineseCheckers(player_list, draw)
-for itt in range(100):
+for itt in range(1000):
     board.play_game()
     reward_values = np.linspace(-1, 1, len(player_list))
     reward = [0]*6
@@ -21,11 +23,12 @@ for itt in range(100):
             reward[player-1] = (reward_values[poses[0]] + reward_values[poses[-1]])/2
         else:
             reward[player-1] = reward_values[i]
-    board.reset(player_list, draw)
     for player in player_list:
         if issubclass(type(player), players.RL_Player):
             player.train(reward)
             player.inc_iter()
+    print("Iteration " + str(itt) + ": Winner was player " +
+          str(board.win_order[0]) + ', reached turn ' + str(board.win_turn[-1]))
+    board.reset(player_list, draw)
 
-
-print(reward)
+torch.save(network.state_dict(), 'trained_NN_v1_weights')

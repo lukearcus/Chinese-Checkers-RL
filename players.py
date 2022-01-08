@@ -84,14 +84,15 @@ class RL_player_v1(RL_Player):
         self.epsilon = eps
         self.gamma = _gamma
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.optimizer = torch.optim.RMSprop(self.value_network.parameters(), lr=learning_rate)
+        self.optimiser = torch.optim.RMSprop(self.value_network.parameters(), lr=learning_rate)
+        self.loss_fun = torch.nn.MSELoss()
 
     def get_val(self, board):
         x = torch.from_numpy(board).float().to(self.device)
         x = x.flatten()
         x = x.unsqueeze(0)
         values = self.value_network(x)
-        value = values[self.id_num]
+        value = values[0, self.id_num]
         return value
 
     def move(self, board, poss_moves):
@@ -120,16 +121,17 @@ class RL_player_v1(RL_Player):
         old = torch.empty(len(self.old_history), self.old_history[0].size).to(self.device)
         old.require_grad = True
         reward = torch.zeros(len(self.old_history), 6).to(self.device)
-        not_done = torch.ones(len(self.old_history)).to(self.device)
+        not_done = torch.eye(len(self.old_history)).to(self.device)
         for i, item in enumerate(self.old_history):
             old[i, :] = torch.from_numpy(item).float().flatten()
             new[i, :] = torch.from_numpy(self.new_history[i]).float().flatten()
         reward[-1, :] = torch.tensor(final_reward).float()
-        not_done[-1] = 0
-
-        target = reward + not_done*self.gamma*self.value_network(new).values()
+        not_done[-1, -1] = 0
+        not_done = not_done.unsqueeze(0)
+        target = reward + not_done@(self.gamma*self.value_network(new)) #might accidentaly propogate grad?
         old_vals = self.value_network(old)
-        loss = torch.nn.MSELoss(target.detach(), old_vals)
+        target = target[0, :]
+        loss = self.loss_fun(target.detach(), old_vals)
         self.optimiser.zero_grad()
 
         loss.backward()
