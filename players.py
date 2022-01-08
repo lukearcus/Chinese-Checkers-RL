@@ -1,6 +1,6 @@
 import random
 import numpy as np
-
+import torch
 
 # Receives board position and moves as a list of tuples (position (of piece to
 # be moved), position it can move to)
@@ -60,24 +60,84 @@ class deterministic_player(Player):
         return selected_move
 
 
-class RL_player_v1(Player):
-    def __init__(self, val_nn):
+class RL_Player(Player):
+    def __init__(self):
+        return None
+
+    def get_val(self):
+        return None
+
+    def train(self):
+        return None
+
+    def inc_iter(self):
+        return None
+
+
+class RL_player_v1(RL_Player):
+
+    def __init__(self, val_nn, eps=0.3, _gamma=0.9, learning_rate=1e-3):
         self.value_network = val_nn
+        self.old_history = []
+        self.new_history = []
+        self.iter = 0
+        self.epsilon = eps
+        self.gamma = _gamma
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.optimizer = torch.optim.RMSprop(self.value_network.parameters(), lr=learning_rate)
 
     def get_val(self, board):
-
-        values = self.value_network(board)
+        x = torch.from_numpy(board).float().to(self.device)
+        x = x.flatten()
+        x = x.unsqueeze(0)
+        values = self.value_network(x)
         value = values[self.id_num]
         return value
 
     def move(self, board, poss_moves):
-        max_val = -np.inf
-        for move in poss_moves:
-            poss_board = np.copy(board)
-            poss_board[move[0][0], move[0][1]] = 0
-            poss_board[move[1][0], move[1][1]] = self.id_num
-            value = self.get_val(poss_board)
-            if value > max_val:
-                max_val = value
-                selected_move = move
+        self.old_history.append(board)
+        if random.random() < np.exp(-self.iter/100):
+            selected_move = random.choice(poss_moves)
+            selected_board = np.copy(board)
+            selected_board[selected_move[0][0], selected_move[0][1]] = 0
+            selected_board[selected_move[1][0], selected_move[1][1]] = self.id_num
+        else:
+            max_val = -np.inf
+            for move in poss_moves:
+                poss_board = np.copy(board)
+                poss_board[move[0][0], move[0][1]] = 0
+                poss_board[move[1][0], move[1][1]] = self.id_num
+                value = self.get_val(poss_board)
+                if value > max_val:
+                    max_val = value
+                    selected_move = move
+                    selected_board = poss_board
+        self.new_history.append(selected_board)
         return selected_move
+
+    def train(self, final_reward):
+        new = torch.empty(len(self.old_history), self.old_history[0].size).to(self.device)
+        old = torch.empty(len(self.old_history), self.old_history[0].size).to(self.device)
+        old.require_grad = True
+        reward = torch.zeros(len(self.old_history), 6).to(self.device)
+        not_done = torch.ones(len(self.old_history)).to(self.device)
+        for i, item in enumerate(self.old_history):
+            old[i, :] = torch.from_numpy(item).float().flatten()
+            new[i, :] = torch.from_numpy(self.new_history[i]).float().flatten()
+        reward[-1, :] = torch.tensor(final_reward).float()
+        not_done[-1] = 0
+
+        target = reward + not_done*self.gamma*self.value_network(new).values()
+        old_vals = self.value_network(old)
+        loss = torch.nn.MSELoss(target.detach(), old_vals)
+        self.optimiser.zero_grad()
+
+        loss.backward()
+
+        self.optimiser.step()
+
+        return
+
+    def inc_iter(self):
+        self.iter += 1
+        return

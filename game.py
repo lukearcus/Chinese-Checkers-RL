@@ -9,15 +9,17 @@ class ChineseCheckers:
     Chinese Checkers game
     """
 
-    win_order = list()
-    win_turn = list()
-
     def __init__(self, _players, _draw=False):
+        self.reset(_players, _draw)
+
+    def reset(self, _players, _draw):
         plt.ion()
         NewBoard = np.zeros((17, 27))
         num_players = len(_players)
         self.players = _players
-
+        
+        self.win_order = list()
+        self.win_turn = list()
         if num_players == 2:
             self.players[0].set_goal(np.array([16, 13]))
             self.players[0].set_id(1)
@@ -105,7 +107,6 @@ class ChineseCheckers:
             self.ax = self.fig.add_subplot(111)
             self.fig.canvas.mpl_connect('button_press_event', self.onclick)
             self.show()
-
     def show(self):
         palette = np.array([[255,   255,   255, 255],   # black
                             [255,   0,   0, 255],   # red

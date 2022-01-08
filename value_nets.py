@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-import numpy as np
+
 
 class NeuralNetwork_v1(nn.Module):
     def __init__(self):
@@ -13,10 +13,9 @@ class NeuralNetwork_v1(nn.Module):
                 nn.Linear(512, 6),
                 nn.Tanh()
             )
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     def forward(self, x):
-        x = torch.from_numpy(x).float().to('cuda')
-        x = x.flatten()
         vals = self.linear_relu_stack(x)
         return vals
 
