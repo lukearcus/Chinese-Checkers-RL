@@ -29,18 +29,29 @@ class human_player(Player):
 
 
 class random_player(Player):
+    old_history = None
+    new_history = None
     def move(self, board, poss_moves):
-        return random.choice(poss_moves)
+        self.old_history = board
+        move = random.choice(poss_moves) 
+        selected_board = np.copy(board)
+        selected_board[move[0][0], move[0][1]] = 0
+        selected_board[move[1][0], move[1][1]] = self.id_num
+        self.new_history = selected_board
+        return move
 
 
 class deterministic_player(Player):
     rand_freq = 0.5
     goal_pos = (0, 0)
+    new_history = None
+    old_history = None
 
     def set_goal(self, goal):
         self.goal_pos = goal
 
     def move(self, board, poss_moves):
+        self.old_history = board
         if random.random() < self.rand_freq:
             selected_move = random.choice(poss_moves)
         else:
@@ -57,6 +68,10 @@ class deterministic_player(Player):
                 if dist < min_distance:
                     min_distance = dist
                     selected_move = move
+        selected_board = np.copy(board)
+        selected_board[selected_move[0][0], selected_move[0][1]] = 0
+        selected_board[selected_move[1][0], selected_move[1][1]] = self.id_num
+        self.new_history = selected_board
         return selected_move
 
 
@@ -72,20 +87,18 @@ class RL_Player(Player):
 
     def inc_iter(self):
         return None
-
+    def reset(self):
+        return None
 
 class RL_player_v1(RL_Player):
 
     def __init__(self, val_nn, eps=0.3, _gamma=0.9, learning_rate=1e-3):
         self.value_network = val_nn
-        self.old_history = []
-        self.new_history = []
         self.iter = 0
         self.epsilon = eps
-        self.gamma = _gamma
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.optimiser = torch.optim.RMSprop(self.value_network.parameters(), lr=learning_rate)
-        self.loss_fun = torch.nn.MSELoss()
+        self.old_history = None
+        self.new_history = None
 
     def get_val(self, board):
         x = torch.from_numpy(board).float().to(self.device)
@@ -96,7 +109,7 @@ class RL_player_v1(RL_Player):
         return value
 
     def move(self, board, poss_moves):
-        self.old_history.append(board)
+        self.old_history = board
         if random.random() < np.exp(-self.iter/100):
             selected_move = random.choice(poss_moves)
             selected_board = np.copy(board)
@@ -113,32 +126,9 @@ class RL_player_v1(RL_Player):
                     max_val = value
                     selected_move = move
                     selected_board = poss_board
-        self.new_history.append(selected_board)
+        self.new_history = selected_board
         return selected_move
 
-    def train(self, final_reward):
-        new = torch.empty(len(self.old_history), self.old_history[0].size).to(self.device)
-        old = torch.empty(len(self.old_history), self.old_history[0].size).to(self.device)
-        old.require_grad = True
-        reward = torch.zeros(len(self.old_history), 6).to(self.device)
-        not_done = torch.eye(len(self.old_history)).to(self.device)
-        for i, item in enumerate(self.old_history):
-            old[i, :] = torch.from_numpy(item).float().flatten()
-            new[i, :] = torch.from_numpy(self.new_history[i]).float().flatten()
-        reward[-1, :] = torch.tensor(final_reward).float()
-        not_done[-1, -1] = 0
-        not_done = not_done.unsqueeze(0)
-        target = reward + not_done@(self.gamma*self.value_network(new)) #might accidentaly propogate grad?
-        old_vals = self.value_network(old)
-        target = target[0, :]
-        loss = self.loss_fun(target.detach(), old_vals)
-        self.optimiser.zero_grad()
-
-        loss.backward()
-
-        self.optimiser.step()
-
-        return
 
     def inc_iter(self):
         self.iter += 1

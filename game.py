@@ -3,21 +3,24 @@ import players
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+import random
 
 class ChineseCheckers:
     """
     Chinese Checkers game
     """
 
-    def __init__(self, _players, _draw=False):
-        self.reset(_players, _draw)
+    def __init__(self, _players, _draw=False, shuffle=True):
+        self.reset(_players, _draw, shuffle)
 
-    def reset(self, _players, _draw):
+    def reset(self, _players, _draw, shuffle):
         plt.ion()
         NewBoard = np.zeros((17, 27))
         num_players = len(_players)
         self.players = _players
-        
+        if shuffle:
+            random.shuffle(self.players)
+
         self.win_order = list()
         self.win_turn = list()
         if num_players == 2:
@@ -217,7 +220,7 @@ class ChineseCheckers:
         else:
             self.move_chosen[1] = np.array((iy, ix))
 
-    def play_game(self):
+    def play_game(self, buffer):
         turn = 0
         while len(self.win_order) < self.num_players-1:
             for i, curr_player in enumerate(self.players):
@@ -253,6 +256,19 @@ class ChineseCheckers:
                     self.check_win(turn)
                     if self.draw:
                         self.show()
+            reward = [0]*6
+            reward_values = np.linspace(-1, 1, self.num_players)
+            for i, player in enumerate(self.win_order):
+                if self.win_turn.count(self.win_turn[i]) > 1:
+                    poses = [j for j, x in enumerate(self.win_turn) if x == self.win_turn[i]]
+                    reward[player-1] = (reward_values[poses[0]] + reward_values[poses[-1]])/2
+                else:
+                    reward[player-1] = reward_values[i]
+            for player in self.players:
+                if not isinstance(player, players.human_player):
+                    buffer.add(player.old_history, player.new_history,
+                               reward[player.id_num], not reward[player.id_num],
+                               player.id_num) 
             turn += 1
         self.win_order.append(self.players[0].id_num)
         self.win_turn.append(turn)
