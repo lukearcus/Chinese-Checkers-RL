@@ -26,5 +26,3 @@ for itt in range(500):
           str(board.win_order[0]) + ', reached turn ' + str(board.win_turn[-1]))
     board.reset(player_list, draw, shuffle)
 torch.save(network.state_dict(), 'trained_NN_v1_weights')
-
-#test
