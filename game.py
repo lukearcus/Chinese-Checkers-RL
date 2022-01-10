@@ -215,55 +215,76 @@ class ChineseCheckers:
         else:
             self.move_chosen[1] = np.array((iy, ix))
 
-    def play_game(self, buffer):
+    def play_turn(self, curr_player, turn):
+        positions = np.where(self.board == curr_player.id_num)
+        possible_moves = []
+        positions = np.stack(positions).T
+        for pos in positions:
+            self.allowed[:, :] = False
+            self.check_allowed(pos, False)
+            allowed_moves = np.where(self.allowed)
+            allowed_moves = np.stack(allowed_moves).T
+            for move in allowed_moves:
+                possible_moves.append((pos, move))
+        if isinstance(curr_player, players.human_player):
+            while True:
+                self.fig.canvas.get_tk_widget().update()
+                for possible in possible_moves:
+                    if np.array_equal(tuple(self.move_chosen), possible):
+                        selected_move = tuple(self.move_chosen)
+                        break
+                else:
+                    continue
+                break
+            self.move_chosen[0] = 0
+            self.move_chosen[1] = 0
+        else:
+            selected_move = curr_player.move(self.board, possible_moves)
+            if self.draw:
+                plt.waitforbuttonpress()
+        self.board[selected_move[0][0], selected_move[0][1]] = 0
+        self.board[selected_move[1][0], selected_move[1][1]] = curr_player.id_num
+        self.check_win(turn)
+        if self.draw:
+            self.show()
+
+    def play_game(self):
         turn = 0
         while len(self.win_order) < self.num_players-1:
-            for i, curr_player in enumerate(self.players):
+            for curr_player in self.players:
                 if curr_player.id_num not in self.win_order:
-                    positions = np.where(self.board == curr_player.id_num)
-                    possible_moves = []
-                    positions = np.stack(positions).T
-                    for pos in positions:
-                        self.allowed[:, :] = False
-                        self.check_allowed(pos, False)
-                        allowed_moves = np.where(self.allowed)
-                        allowed_moves = np.stack(allowed_moves).T
-                        for move in allowed_moves:
-                            possible_moves.append((pos, move))
-                    if isinstance(curr_player, players.human_player):
-                        while True:
-                            self.fig.canvas.get_tk_widget().update()
-                            for possible in possible_moves:
-                                if np.array_equal(tuple(self.move_chosen), possible):
-                                    selected_move = tuple(self.move_chosen)
-                                    break
-                            else:
-                                continue
-                            break
-                        self.move_chosen[0] = 0
-                        self.move_chosen[1] = 0
-                    else:
-                        selected_move = curr_player.move(self.board, possible_moves)
-                        if self.draw:
-                            plt.waitforbuttonpress()
-                    self.board[selected_move[0][0], selected_move[0][1]] = 0
-                    self.board[selected_move[1][0], selected_move[1][1]] = curr_player.id_num
-                    self.check_win(turn)
-                    if self.draw:
-                        self.show()
+                    self.play_turn(curr_player, turn)
+            turn += 1
+        self.win_order.append(self.players[0].id_num)
+        self.win_turn.append(turn)
+
+    def training(self, trainer):
+        turn = 0
+        while len(self.win_order) < self.num_players-1:
+            old_hist = list()
+            new_hist = list()
+            for curr_player in self.players:
+                old_hist.append(self.board)
+                if curr_player.id_num not in self.win_order:
+                    self.play_turn(curr_player, turn)
+                new_hist.append(self.board)
+
             reward = [0]*6
             reward_values = np.linspace(-1, 1, self.num_players)
             for i, player in enumerate(self.win_order):
                 if self.win_turn.count(self.win_turn[i]) > 1:
-                    poses = [j for j, x in enumerate(self.win_turn) if x == self.win_turn[i]]
-                    reward[player-1] = (reward_values[poses[0]] + reward_values[poses[-1]])/2
+                    poses = [j for j, x in enumerate(self.win_turn)
+                             if x == self.win_turn[i]]
+                    reward[player-1] = (reward_values[poses[0]]
+                                        + reward_values[poses[-1]])/2
                 else:
                     reward[player-1] = reward_values[i]
-            for player in self.players:
-                if not isinstance(player, players.human_player):
-                    buffer.add(player.old_history, player.new_history,
-                               reward[player.id_num], not reward[player.id_num],
-                               player.id_num) 
+            for i, player in enumerate(self.players):
+                trainer.buffer.add(old_hist[i], new_hist[i],
+                                   reward[player.id_num],
+                                   not reward[player.id_num],
+                                   player.id_num)
             turn += 1
+            trainer.train_nn()
         self.win_order.append(self.players[0].id_num)
         self.win_turn.append(turn)

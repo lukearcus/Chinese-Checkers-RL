@@ -16,9 +16,7 @@ shuffle = True
 draw = False
 board = game.ChineseCheckers(player_list, draw, shuffle)
 for itt in range(100):
-    board.play_game(trainer.buffer)
-    for k in range(100):
-        trainer.train_nn()
+    board.training(trainer)
     for player in player_list:
         if issubclass(type(player), players.RL_Player):
             player.inc_iter()

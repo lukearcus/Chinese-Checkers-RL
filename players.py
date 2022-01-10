@@ -29,29 +29,22 @@ class human_player(Player):
 
 
 class random_player(Player):
-    old_history = None
-    new_history = None
     def move(self, board, poss_moves):
-        self.old_history = board
         move = random.choice(poss_moves) 
         selected_board = np.copy(board)
         selected_board[move[0][0], move[0][1]] = 0
         selected_board[move[1][0], move[1][1]] = self.id_num
-        self.new_history = selected_board
         return move
 
 
 class deterministic_player(Player):
     rand_freq = 0.5
     goal_pos = (0, 0)
-    new_history = None
-    old_history = None
 
     def set_goal(self, goal):
         self.goal_pos = goal
 
     def move(self, board, poss_moves):
-        self.old_history = board
         if random.random() < self.rand_freq:
             selected_move = random.choice(poss_moves)
         else:
@@ -71,7 +64,6 @@ class deterministic_player(Player):
         selected_board = np.copy(board)
         selected_board[selected_move[0][0], selected_move[0][1]] = 0
         selected_board[selected_move[1][0], selected_move[1][1]] = self.id_num
-        self.new_history = selected_board
         return selected_move
 
 
@@ -97,8 +89,6 @@ class RL_player_v1(RL_Player):
         self.iter = 0
         self.epsilon = eps
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.old_history = None
-        self.new_history = None
 
     def get_val(self, board):
         x = torch.from_numpy(board).float().to(self.device)
@@ -109,7 +99,6 @@ class RL_player_v1(RL_Player):
         return value
 
     def move(self, board, poss_moves):
-        self.old_history = board
         if random.random() < np.exp(-self.iter/100):
             selected_move = random.choice(poss_moves)
             selected_board = np.copy(board)
@@ -126,7 +115,6 @@ class RL_player_v1(RL_Player):
                     max_val = value
                     selected_move = move
                     selected_board = poss_board
-        self.new_history = selected_board
         return selected_move
 
 
