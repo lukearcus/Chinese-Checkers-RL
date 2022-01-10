@@ -15,7 +15,7 @@ player_list = [RL_player, players.deterministic_player()]
 shuffle = True
 draw = False
 board = game.ChineseCheckers(player_list, draw, shuffle)
-for itt in range(1000):
+for itt in range(100):
     board.play_game(trainer.buffer)
     for k in range(100):
         trainer.train_nn()

@@ -167,50 +167,40 @@ class ChineseCheckers:
                         self.check_allowed(hop, True)
 
     def check_win(self, turn):
-        not_empty = list()
-        have_reached = list()
-        for i in range(self.num_players):
-            not_empty.append(True)
-            have_reached.append(False)
-        if self.num_players == 2:
-            for i in range(4):  # change this (currently requires my piece on every row
-                not_empty[0] = not_empty[0] and np.all(self.board[-1-i, :] != 0)
-                have_reached[0] = have_reached[0] or np.any(self.board[-1-i] == 1)
+        not_empty = [True] * 6
+        have_reached = [False] * 6
+        for i in range(4):
+            first_goal = self.board[-1-i, :]
+            not_empty[0] = not_empty[0] and np.all(first_goal != 0)
+            have_reached[0] = have_reached[0] or np.any(first_goal == 1)
 
-                not_empty[1] = not_empty[1] and np.all(self.board[i, :] != 0)
-                have_reached[1] = have_reached[1] or np.any(self.board[i] == 4)
-        if self.num_players == 3:  # Do this!!!!!! You're a numpty
-            for i in range(4):
-                won[0] = won[0] and np.any(self.board[-1-i, self.board[-1-i, :] != -1] == 1)
-                won[1] = won[1] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 3)
-                won[2] = won[2] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 5)
-        if self.num_players == 4:
-            for i in range(4):
-                won[0] = won[0] and np.any(self.board[-i-5, np.pad(self.board[-i-5, 0:9-i] != -1, (0, i+18))] == 2)
-                won[1] = won[1] and np.any(self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 3)
-                won[2] = won[2] and np.any(self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0))] == 5)
-                won[3] = won[3] and np.any(self.board[-i-5, np.pad(self.board[-i-5, -9+i:] != -1, (18+i, 0))] == 6)
-        if self.num_players == 6:
-            for i in range(4):
-                won[0] = won[0] and np.any(self.board[-1-i, self.board[-1-i, :] != -1] == 1)
-                won[1] = won[1] and np.any(
-                        self.board[-i-5, np.pad(self.board[-i-5, 0:9-i] != -1, (0, i+18))] == 2)
-                won[2] = won[2] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, 0:9-i] != -1, (0, i+18))] == 3)
-                won[3] = won[3] and np.any(self.board[i, self.board[i, :] != -1] == 4)
-                won[4] = won[4] and np.any(
-                        self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0) )] == 5)
-                won[5] = won[5] and np.any(
-                        self.board[-i-5, np.pad(self.board[-i-5, -9+i:] != -1, (18+i, 0))] == 6)
-        won = [not_empty_i and reached_i for not_empty_i, reached_i in zip(not_empty, have_reached)]
+            second_goal = self.board[-i-5, 0:9-i]
+            not_empty[1] = not_empty[1] and np.all(second_goal != 0)
+            have_reached[1] = have_reached[1] or np.any(second_goal == 2)
 
-        self.win_list = won
-        for i in range(self.num_players):
-            if won[i]:
-                if self.players[i].id_num not in self.win_order:
-                    self.win_order.append(self.players[i].id_num)
+            third_goal = self.board[i+4, 0:9-i]
+            not_empty[2] = not_empty[2] and np.all(third_goal != 0)
+            have_reached[2] = have_reached[2] or np.any(third_goal == 3)
+
+            fourth_goal = self.board[i, :]
+            not_empty[3] = not_empty[3] and np.all(fourth_goal != 0)
+            have_reached[3] = have_reached[3] or np.any(fourth_goal == 4)
+
+            fifth_goal = self.board[i+4, -9+i:]
+            not_empty[4] = not_empty[4] and np.all(fifth_goal != 0)
+            have_reached[4] = have_reached[4] or np.any(fifth_goal == 5)
+
+            sixth_goal = self.board[-i-5, -9+i:]
+            not_empty[5] = not_empty[5] and np.all(sixth_goal != 0)
+            have_reached[5] = have_reached[5] or np.any(sixth_goal == 6)
+
+        won = [not_empty_i and reached_i for not_empty_i, reached_i
+               in zip(not_empty, have_reached)]
+
+        for player in self.players:
+            if won[player.id_num - 1]:
+                if player.id_num not in self.win_order:
+                    self.win_order.append(player.id_num)
                     self.win_turn.append(turn)
                     
 
