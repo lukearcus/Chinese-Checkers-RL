@@ -8,9 +8,10 @@ import torch
 
 class Player:
     id_num = 0
-    
+
     def move(self, board, poss_moves):
         return None
+
     def set_goal(self, goal):
         return None
 
@@ -30,7 +31,7 @@ class human_player(Player):
 
 class random_player(Player):
     def move(self, board, poss_moves):
-        move = random.choice(poss_moves) 
+        move = random.choice(poss_moves)
         selected_board = np.copy(board)
         selected_board[move[0][0], move[0][1]] = 0
         selected_board[move[1][0], move[1][1]] = self.id_num
@@ -79,8 +80,10 @@ class RL_Player(Player):
 
     def inc_iter(self):
         return None
+
     def reset(self):
         return None
+
 
 class RL_player_v1(RL_Player):
 
@@ -99,11 +102,12 @@ class RL_player_v1(RL_Player):
         return value
 
     def move(self, board, poss_moves):
-        if random.random() < np.exp(-self.iter/100):
+        if random.random() < self.epsilon*np.exp(-self.iter/100):
             selected_move = random.choice(poss_moves)
             selected_board = np.copy(board)
             selected_board[selected_move[0][0], selected_move[0][1]] = 0
-            selected_board[selected_move[1][0], selected_move[1][1]] = self.id_num
+            selected_board[selected_move[1][0], selected_move[1][1]] =\
+                self.id_num
         else:
             max_val = -np.inf
             for move in poss_moves:
@@ -116,7 +120,6 @@ class RL_player_v1(RL_Player):
                     selected_move = move
                     selected_board = poss_board
         return selected_move
-
 
     def inc_iter(self):
         self.iter += 1

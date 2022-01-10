@@ -1,9 +1,11 @@
-import numpy as np
-import players
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
 import random
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import players
+
+matplotlib.use("TkAgg")
+
 
 class ChineseCheckers:
     """
@@ -11,6 +13,10 @@ class ChineseCheckers:
     """
 
     def __init__(self, _players, _draw=False, shuffle=True):
+        for player in _players:
+            if isinstance(player, players.human_player):
+                _draw = True
+                break
         self.reset(_players, _draw, shuffle)
 
     def reset(self, _players, _draw, shuffle):
@@ -106,10 +112,11 @@ class ChineseCheckers:
         self.draw = _draw
         if _draw:
             self.fig = plt.figure()
-            self.fig.canvas.manager.full_screen_toggle()  # toggle fullscreen mode
+            self.fig.canvas.manager.full_screen_toggle()
             self.ax = self.fig.add_subplot(111)
             self.fig.canvas.mpl_connect('button_press_event', self.onclick)
             self.show()
+
     def show(self):
         palette = np.array([[255,   255,   255, 255],   # black
                             [255,   0,   0, 255],   # red
@@ -120,20 +127,27 @@ class ChineseCheckers:
                             [255, 255, 0, 255],
                             [0, 0, 0, 255]])  # white
         RGB = palette[(self.board).astype(int)]
-        #if self.move_chosen != [0, 0]:
+        # if self.move_chosen != [0, 0]:
         #    RGB[self.move_chosen[0][0], self.move_chosen[0][1]][3] = 75
         self.ax.clear()
         self.ax.imshow(RGB)
         for i in range(self.num_players):
             self.ax.text(2*(i+1 > 3), i % 3, 'player ' + str(i+1),
-                         bbox={'facecolor': palette[self.players[i].id_num]/255, 'pad': 10})
+                         bbox={
+                              'facecolor': palette[self.players[i].id_num]/255,
+                              'pad': 10})
         if self.win_order:
-            self.ax.text(18, 0, 'Leaderboard', bbox={'facecolor': 'white', 'pad': 10})
+            self.ax.text(18, 0, 'Leaderboard',
+                         bbox={'facecolor': 'white',
+                               'pad': 10})
         for i, winner in enumerate(self.win_order):
-            self.ax.text(20+2*(i+1 > 3), i % 3, str(i+1) + ': ' +  'player ' + str(winner),
-                         bbox={'facecolor': palette[self.players[i].id_num]/255, 'pad': 10})
+            self.ax.text(20+2*(i+1 > 3), i % 3,
+                         str(i+1) + ': ' + 'player ' + str(winner),
+                         bbox={
+                              'facecolor': palette[self.players[i].id_num]/255,
+                              'pad': 10})
 
-        #plt.title("Player: " + str(self.curr_player))
+        # plt.title("Player: " + str(self.curr_player))
         plt.show()
 
     def check_allowed(self, pos, hopping):
@@ -202,7 +216,6 @@ class ChineseCheckers:
                 if player.id_num not in self.win_order:
                     self.win_order.append(player.id_num)
                     self.win_turn.append(turn)
-                    
 
     def onclick(self, event):
         ix, iy = event.xdata, event.ydata
@@ -243,7 +256,9 @@ class ChineseCheckers:
             if self.draw:
                 plt.waitforbuttonpress()
         self.board[selected_move[0][0], selected_move[0][1]] = 0
-        self.board[selected_move[1][0], selected_move[1][1]] = curr_player.id_num
+        self.board[selected_move[1][0], selected_move[1][1]] =\
+            curr_player.id_num
+
         self.check_win(turn)
         if self.draw:
             self.show()

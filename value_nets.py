@@ -41,6 +41,7 @@ class ReplayBuffer:
     def get_batch(self, size):
         return random.choices(self.history, k=size)
 
+
 class NN_Trainer:
 
     def __init__(self, nn, _batch_size=100, _gamma=0.9, learning_rate=1e-3):
@@ -50,12 +51,15 @@ class NN_Trainer:
         self.gamma = _gamma
         self.loss_fun = torch.nn.MSELoss()
         self.value_network = nn
-        self.optimiser = torch.optim.RMSprop(self.value_network.parameters(), lr=learning_rate)
+        self.optimiser = torch.optim.RMSprop(self.value_network.parameters(),
+                                             lr=learning_rate)
 
     def train_nn(self):
         batch = self.buffer.get_batch(self.batch_size)
-        new = torch.empty(self.batch_size, batch[0]["old"].size).to(self.device)
-        old = torch.empty(self.batch_size, batch[0]["old"].size).to(self.device)
+        new = torch.empty(self.batch_size,
+                          batch[0]["old"].size).to(self.device)
+        old = torch.empty(self.batch_size,
+                          batch[0]["old"].size).to(self.device)
         old.require_grad = True
         reward = torch.zeros(self.batch_size, 6).to(self.device)
         not_done = torch.zeros(self.batch_size, 1).to(self.device)
@@ -76,7 +80,7 @@ class NN_Trainer:
         target = target[0, :]
         loss = self.loss_fun(target.detach(), old_vals)
         self.optimiser.zero_grad()
-    
+
         loss.backward()
-    
+
         self.optimiser.step()
