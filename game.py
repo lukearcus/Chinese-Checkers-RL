@@ -167,16 +167,19 @@ class ChineseCheckers:
                         self.check_allowed(hop, True)
 
     def check_win(self, turn):
-        won = list()
+        not_empty = list()
+        have_reached = list()
         for i in range(self.num_players):
-            won.append(True)
+            not_empty.append(True)
+            have_reached.append(False)
         if self.num_players == 2:
-            for i in range(4):
-                won[0] = won[0] and (np.any(self.board[-1-i, :] == 1)
-                                     and np.all(self.board[-1-i, :] != 0))
-                won[1] = won[1] and (np.any(self.board[i, :] == 4)
-                                     and np.all(self.board[i, :] != 0))
-        if self.num_players == 3:
+            for i in range(4):  # change this (currently requires my piece on every row
+                not_empty[0] = not_empty[0] and np.all(self.board[-1-i, :] != 0)
+                have_reached[0] = have_reached[0] or np.any(self.board[-1-i] == 1)
+
+                not_empty[1] = not_empty[1] and np.all(self.board[i, :] != 0)
+                have_reached[1] = have_reached[1] or np.any(self.board[i] == 4)
+        if self.num_players == 3:  # Do this!!!!!! You're a numpty
             for i in range(4):
                 won[0] = won[0] and np.any(self.board[-1-i, self.board[-1-i, :] != -1] == 1)
                 won[1] = won[1] and np.any(
@@ -201,6 +204,8 @@ class ChineseCheckers:
                         self.board[i+4, np.pad(self.board[i+4, -9+i:] != -1, (18+i, 0) )] == 5)
                 won[5] = won[5] and np.any(
                         self.board[-i-5, np.pad(self.board[-i-5, -9+i:] != -1, (18+i, 0))] == 6)
+        won = [not_empty_i and reached_i for not_empty_i, reached_i in zip(not_empty, have_reached)]
+
         self.win_list = won
         for i in range(self.num_players):
             if won[i]:
