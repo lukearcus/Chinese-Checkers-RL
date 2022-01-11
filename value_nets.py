@@ -39,12 +39,13 @@ class ReplayBuffer:
             self.history.pop(0)
 
     def get_batch(self, size):
-        return random.choices(self.history, k=size)
+        size = min(size, len(self.history))
+        return random.sample(self.history, size)
 
 
 class NN_Trainer:
 
-    def __init__(self, nn, _batch_size=100, _gamma=0.9, learning_rate=1e-3):
+    def __init__(self, nn, _batch_size=1000, _gamma=0.9, learning_rate=1e-3):
         self.buffer = ReplayBuffer()
         self.batch_size = _batch_size
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -56,15 +57,16 @@ class NN_Trainer:
 
     def train_nn(self):
         batch = self.buffer.get_batch(self.batch_size)
-        new = torch.empty(self.batch_size,
+        actual_batch_size = len(batch)
+        new = torch.empty(actual_batch_size,
                           batch[0]["old"].size).to(self.device)
-        old = torch.empty(self.batch_size,
+        old = torch.empty(actual_batch_size,
                           batch[0]["old"].size).to(self.device)
         old.require_grad = True
-        reward = torch.zeros(self.batch_size, 6).to(self.device)
-        not_done = torch.zeros(self.batch_size, 1).to(self.device)
-        player = torch.zeros(self.batch_size, 1).to(self.device)
-        for i in range(self.batch_size):
+        reward = torch.zeros(actual_batch_size, 6).to(self.device)
+        not_done = torch.zeros(actual_batch_size, 1).to(self.device)
+        player = torch.zeros(actual_batch_size, 1).to(self.device)
+        for i in range(actual_batch_size):
             old[i, :] = torch.from_numpy(batch[i]["old"]).float().flatten()
             new[i, :] = torch.from_numpy(batch[i]["new"]).float().flatten()
             reward[i, :] = batch[i]["reward"]

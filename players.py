@@ -98,7 +98,7 @@ class RL_player_v1(RL_Player):
         x = x.flatten()
         x = x.unsqueeze(0)
         values = self.value_network(x)
-        value = values[0, self.id_num]
+        value = values[0, self.id_num-1]
         return value
 
     def move(self, board, poss_moves):
@@ -117,6 +117,9 @@ class RL_player_v1(RL_Player):
                 value = self.get_val(poss_board)
                 if value > max_val:
                     max_val = value
+                    selected_move = move
+                    selected_board = poss_board
+                elif value == max_val and random.random() < 0.5:
                     selected_move = move
                     selected_board = poss_board
         return selected_move
