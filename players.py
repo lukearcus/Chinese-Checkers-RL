@@ -39,7 +39,7 @@ class random_player(Player):
 
 
 class deterministic_player(Player):
-    rand_freq = 0.5
+    rand_freq = 0.2
     goal_pos = (0, 0)
 
     def set_goal(self, goal):
@@ -87,7 +87,7 @@ class RL_Player(Player):
 
 class RL_player_v1(RL_Player):
 
-    def __init__(self, val_nn, eps=0.3, _gamma=0.9, learning_rate=1e-3):
+    def __init__(self, val_nn, eps=0.3):
         self.value_network = val_nn
         self.iter = 0
         self.epsilon = eps

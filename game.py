@@ -270,7 +270,9 @@ class ChineseCheckers:
                 if curr_player.id_num not in self.win_order:
                     self.play_turn(curr_player, turn)
             turn += 1
-        self.win_order.append(self.players[0].id_num)
+        for player in self.players:
+            if player.id_num not in self.win_order:
+                self.win_order.append(self.players[0].id_num)
         self.win_turn.append(turn)
 
     def training(self, trainer):
@@ -279,13 +281,16 @@ class ChineseCheckers:
             old_hist = list()
             new_hist = list()
             for curr_player in self.players:
-                old_hist.append(self.board)
+                old_hist.append(np.copy(self.board))
                 if curr_player.id_num not in self.win_order:
                     self.play_turn(curr_player, turn)
-                new_hist.append(self.board)
+                new_hist.append(np.copy(self.board))
 
             reward = [0]*6
-            reward_values = np.linspace(-1, 1, self.num_players)
+            if len(self.win_order) == self.num_players-1:
+                for player in self.players:
+                    reward[player.id_num -1] = -1
+            reward_values = -np.linspace(-1, 1, self.num_players)
             for i, player in enumerate(self.win_order):
                 if self.win_turn.count(self.win_turn[i]) > 1:
                     poses = [j for j, x in enumerate(self.win_turn)
@@ -296,10 +301,12 @@ class ChineseCheckers:
                     reward[player-1] = reward_values[i]
             for i, player in enumerate(self.players):
                 trainer.buffer.add(old_hist[i], new_hist[i],
-                                   reward[player.id_num],
-                                   not reward[player.id_num],
+                                   reward[player.id_num-1],
+                                   not reward[player.id_num-1],
                                    player.id_num)
             turn += 1
             trainer.train_nn()
-        self.win_order.append(self.players[0].id_num)
+        for player in self.players:
+            if player.id_num not in self.win_order:
+                self.win_order.append(self.players[0].id_num)
         self.win_turn.append(turn)

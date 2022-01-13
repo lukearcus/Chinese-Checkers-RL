@@ -12,7 +12,25 @@ class NeuralNetwork_v1(nn.Module):
                 nn.Linear(512, 512),
                 nn.LeakyReLU(),
                 nn.Linear(512, 6),
-                nn.Tanh()
+            )
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    def forward(self, x):
+        vals = self.linear_relu_stack(x)
+        return vals
+
+
+class NeuralNetwork_v2(nn.Module):
+    def __init__(self):
+        super(NeuralNetwork_v2, self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+                nn.Linear(17*27, 512),
+                nn.LeakyReLU(),
+                nn.Linear(512, 512),
+                nn.LeakyReLU(),
+                nn.Linear(512, 128),
+                nn.LeakyReLU(),
+                nn.Linear(128, 6),
             )
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -56,27 +74,28 @@ class NN_Trainer:
                                              lr=learning_rate)
 
     def train_nn(self):
-        batch = self.buffer.get_batch(self.batch_size)
+        batch = self.buffer.get_batch(self.batch_size-6)
+        batch = batch + self.buffer.history[-6:]
         actual_batch_size = len(batch)
         new = torch.empty(actual_batch_size,
                           batch[0]["old"].size).to(self.device)
         old = torch.empty(actual_batch_size,
                           batch[0]["old"].size).to(self.device)
         old.require_grad = True
-        reward = torch.zeros(actual_batch_size, 6).to(self.device)
+        reward = torch.zeros(actual_batch_size, 1).to(self.device)
         not_done = torch.zeros(actual_batch_size, 1).to(self.device)
         player = torch.zeros(actual_batch_size, 1).to(self.device)
         for i in range(actual_batch_size):
             old[i, :] = torch.from_numpy(batch[i]["old"]).float().flatten()
             new[i, :] = torch.from_numpy(batch[i]["new"]).float().flatten()
-            reward[i, :] = batch[i]["reward"]
+            reward[i] = batch[i]["reward"]
             not_done[i] = batch[i]["not_done"]
-            player[i] = batch[i]["player_id"]
+            player[i] = batch[i]["player_id"]-1
         ids = player.long()
         not_done = not_done.unsqueeze(0)
         new_vals = self.value_network(new)
         new_vals = new_vals.gather(1, ids.view(-1, 1))
-        target = reward.gather(1, ids.view(-1, 1)) +\
+        target = reward +\
             not_done*(self.gamma*new_vals)
         old_vals = self.value_network(old).gather(1, ids.view(-1, 1))
         target = target[0, :]
