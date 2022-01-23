@@ -63,7 +63,7 @@ class ReplayBuffer:
 
 class NN_Trainer:
 
-    def __init__(self, nn, _batch_size=1000, _gamma=0.9, learning_rate=1e-3):
+    def __init__(self, nn, _batch_size=100, _gamma=0.9, learning_rate=1e-3):
         self.buffer = ReplayBuffer()
         self.batch_size = _batch_size
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'

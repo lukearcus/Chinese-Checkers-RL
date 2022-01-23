@@ -18,6 +18,12 @@ class Player:
     def set_id(self, id_num):
         self.id_num = id_num
 
+    def next_board(self, board, move):
+        poss_board = np.copy(board)
+        poss_board[move[0][0], move[0][1]] = 0
+        poss_board[move[1][0], move[1][1]] = self.id_num
+        return poss_board
+
 
 class human_player(Player):
     def move(self, poss_moves):
@@ -32,9 +38,6 @@ class human_player(Player):
 class random_player(Player):
     def move(self, board, poss_moves):
         move = random.choice(poss_moves)
-        selected_board = np.copy(board)
-        selected_board[move[0][0], move[0][1]] = 0
-        selected_board[move[1][0], move[1][1]] = self.id_num
         return move
 
 
@@ -62,9 +65,6 @@ class deterministic_player(Player):
                 if dist < min_distance:
                     min_distance = dist
                     selected_move = move
-        selected_board = np.copy(board)
-        selected_board[selected_move[0][0], selected_move[0][1]] = 0
-        selected_board[selected_move[1][0], selected_move[1][1]] = self.id_num
         return selected_move
 
 
@@ -104,24 +104,19 @@ class RL_player_v1(RL_Player):
     def move(self, board, poss_moves):
         if random.random() < self.epsilon*np.exp(-self.iter/100):
             selected_move = random.choice(poss_moves)
-            selected_board = np.copy(board)
-            selected_board[selected_move[0][0], selected_move[0][1]] = 0
-            selected_board[selected_move[1][0], selected_move[1][1]] =\
-                self.id_num
         else:
             max_val = -np.inf
+            best_moves = list()
             for move in poss_moves:
-                poss_board = np.copy(board)
-                poss_board[move[0][0], move[0][1]] = 0
-                poss_board[move[1][0], move[1][1]] = self.id_num
+                poss_board = self.next_board(board, move)
                 value = self.get_val(poss_board)
                 if value > max_val:
+                    best_moves = list()
+                    best_moves.append(move)
                     max_val = value
-                    selected_move = move
-                    selected_board = poss_board
-                elif value == max_val and random.random() < 0.5:
-                    selected_move = move
-                    selected_board = poss_board
+                elif value == max_val:
+                    best_moves.append(move)
+            selected_move = random.choice(best_moves)
         return selected_move
 
     def inc_iter(self):
